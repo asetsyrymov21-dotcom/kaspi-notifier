@@ -1,0 +1,11 @@
+version: "3.9"
+
+services:
+  notifier:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - ./data:/data
+    command: ["python", "-m", "app.main"]
+    restart: "no"
