@@ -1,7 +1,23 @@
+# Secrets and local config — never commit these
 .env
-.venv/
+tenants.json
+
+# Python
 __pycache__/
 *.py[cod]
-data/*.db
-data/*.sqlite
-data/*.sqlite3
+*.pyo
+.venv/
+venv/
+
+# Data / state
+data/
+*.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp

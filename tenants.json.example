@@ -1,0 +1,22 @@
+[
+  {
+    "name": "shop-main",
+    "kaspi_api_key": "your_api_key_for_shop_1",
+    "kaspi_orders_url": "https://kaspi.kz/shop/api/orders",
+    "telegram_bot_token": "111111111:AABBCCDDEEFFaabbccddeeff-shop1",
+    "telegram_chat_id": "123456789",
+    "initial_sync_mode": "mark_only",
+    "processed_retention_days": 180
+  },
+  {
+    "name": "shop-secondary",
+    "kaspi_api_key": "your_api_key_for_shop_2",
+    "kaspi_base_url": "https://kaspi.kz/shop/api",
+    "kaspi_orders_path": "orders",
+    "telegram_bot_token": "222222222:AABBCCDDEEFFaabbccddeeff-shop2",
+    "telegram_chat_id": "-100987654321",
+    "initial_sync_mode": "notify_all",
+    "page_size": 20,
+    "log_level": "DEBUG"
+  }
+]

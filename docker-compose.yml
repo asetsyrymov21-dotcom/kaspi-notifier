@@ -1,11 +1,30 @@
 version: "3.9"
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: kaspi
+      POSTGRES_PASSWORD: kaspi
+      POSTGRES_DB: kaspi
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kaspi"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   notifier:
     build: .
     env_file:
       - .env
-    volumes:
-      - ./data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
     command: ["python", "-m", "app.main"]
     restart: "no"
+
+volumes:
+  pgdata:

@@ -1,5 +1,4 @@
-import os
-import sqlite3
+import psycopg2
 from datetime import datetime, timezone
 from typing import Iterable, Set
 
@@ -9,64 +8,58 @@ logger = setup_logger()
 
 
 class Storage:
-    def __init__(self, db_path: str):
-        self.db_path = db_path
-        self._ensure_dir()
+    def __init__(self, database_url: str, tenant_id: str):
+        self.database_url = database_url
+        self.tenant_id = tenant_id
         self._init_db()
 
-    def _ensure_dir(self) -> None:
-        directory = os.path.dirname(self.db_path)
-        if directory:
-            os.makedirs(directory, exist_ok=True)
+    def _connect(self):
+        return psycopg2.connect(self.database_url)
 
     def _init_db(self) -> None:
-        conn = sqlite3.connect(self.db_path)
-        try:
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS processed_orders (
-                    order_id TEXT PRIMARY KEY,
-                    processed_at INTEGER NOT NULL
-                );
-                """
-            )
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "CREATE TABLE IF NOT EXISTS processed_orders ("
+                    "  tenant_id    TEXT   NOT NULL,"
+                    "  order_id     TEXT   NOT NULL,"
+                    "  processed_at BIGINT NOT NULL,"
+                    "  PRIMARY KEY (tenant_id, order_id)"
+                    ");"
+                )
             conn.commit()
-        finally:
-            conn.close()
 
     def cleanup(self, retention_days: int | None) -> None:
         if retention_days is None:
             return
-        conn = sqlite3.connect(self.db_path)
-        try:
-            cutoff = int(datetime.now(timezone.utc).timestamp() - retention_days * 86400)
-            cursor = conn.execute(
-                "DELETE FROM processed_orders WHERE processed_at < ?;", (cutoff,)
-            )
+        cutoff = int(datetime.now(timezone.utc).timestamp() - retention_days * 86400)
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "DELETE FROM processed_orders WHERE tenant_id = %s AND processed_at < %s;",
+                    (self.tenant_id, cutoff),
+                )
+                deleted = cur.rowcount if cur.rowcount is not None else 0
             conn.commit()
-            logger.info(
-                "Cleanup: retention_days=%d removed=%d",
-                retention_days,
-                cursor.rowcount if cursor.rowcount is not None else 0,
-            )
-        finally:
-            conn.close()
+        logger.info("Cleanup: tenant=%s retention_days=%d removed=%d", self.tenant_id, retention_days, deleted)
 
     def get_processed_ids(self) -> Set[str]:
-        conn = sqlite3.connect(self.db_path)
-        try:
-            cursor = conn.execute("SELECT order_id FROM processed_orders;")
-            return {row[0] for row in cursor.fetchall()}
-        finally:
-            conn.close()
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT order_id FROM processed_orders WHERE tenant_id = %s;",
+                    (self.tenant_id,),
+                )
+                return {row[0] for row in cur.fetchall()}
 
     def is_empty(self) -> bool:
-        conn = sqlite3.connect(self.db_path)
-        try:
-            cursor = conn.execute("SELECT 1 FROM processed_orders LIMIT 1;")
-            return cursor.fetchone() is None
-        finally:
-            conn.close()
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT 1 FROM processed_orders WHERE tenant_id = %s LIMIT 1;",
+                    (self.tenant_id,),
+                )
+                return cur.fetchone() is None
 
     def mark_processed(self, order_ids: Iterable[str]) -> None:
         order_ids = list(order_ids)
@@ -74,13 +67,12 @@ class Storage:
             return
 
         now = int(datetime.now(timezone.utc).timestamp())
-        conn = sqlite3.connect(self.db_path)
-        try:
-            conn.executemany(
-                "INSERT OR IGNORE INTO processed_orders (order_id, processed_at) VALUES (?, ?);",
-                [(oid, now) for oid in order_ids],
-            )
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                cur.executemany(
+                    "INSERT INTO processed_orders (tenant_id, order_id, processed_at)"
+                    " VALUES (%s, %s, %s) ON CONFLICT DO NOTHING;",
+                    [(self.tenant_id, oid, now) for oid in order_ids],
+                )
             conn.commit()
-            logger.info(f"Saved {len(order_ids)} processed orders")
-        finally:
-            conn.close()
+        logger.info("Saved %d processed orders for tenant=%s", len(order_ids), self.tenant_id)
