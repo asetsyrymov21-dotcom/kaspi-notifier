@@ -78,7 +78,7 @@ All tenants share the **same PostgreSQL database** (`DATABASE_URL`), isolated by
 | `TELEGRAM_CHAT_ID` | — | Chat ID or @username |
 | `HTTP_TIMEOUT` | `10` | HTTP timeout in seconds |
 | `DRY_RUN` | `0` | `1` to log-only without sending or writing |
-| `INITIAL_SYNC_MODE` | `mark_only` | `mark_only` or `notify_all` on first empty run |
+| `INITIAL_SYNC_MODE` | `notify_all` | `mark_only` or `notify_all` on first empty run |
 | `LOG_LEVEL` | `INFO` | `DEBUG` / `INFO` / `WARNING` / `ERROR` |
 | `LOCK_FILE_PATH` | `/tmp/kaspi-notifier.lock` | Lock file path (single-tenant) |
 | `PROCESSED_RETENTION_DAYS` | — | Days to keep processed records; empty = no cleanup |
@@ -126,8 +126,8 @@ All processed `order_id` values are stored in SQLite. Re-runs only notify on uns
 
 ## Bootstrap / first-run protection
 
-- `INITIAL_SYNC_MODE=mark_only` (default): on a fresh empty database, all found orders are marked as processed without sending notifications. Prevents a flood of old-order notifications on first run.
-- `INITIAL_SYNC_MODE=notify_all`: notifications are sent for all found orders even on the first run.
+- `INITIAL_SYNC_MODE=mark_only`: on a fresh empty database, all found orders are marked as processed without sending notifications. Prevents a flood of old-order notifications on first run.
+- `INITIAL_SYNC_MODE=notify_all` (default): notifications are sent for all found orders even on the first run.
 
 ## Lock file
 

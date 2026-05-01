@@ -17,7 +17,7 @@ class Config:
     order_state: str | None = None
     order_status: str | None = None
     page_size: int | None = None
-    initial_sync_mode: str = "mark_only"
+    initial_sync_mode: str = "notify_all"
     log_level: str = "INFO"
     lock_file_path: str = "/tmp/kaspi-notifier.lock"
     processed_retention_days: int | None = None
@@ -50,7 +50,7 @@ def load_config() -> Config:
     order_state = _optional_str("KASPI_ORDER_STATE")
     order_status = _optional_str("KASPI_ORDER_STATUS")
     page_size = _optional_int("KASPI_PAGE_SIZE")
-    initial_sync_mode = os.getenv("INITIAL_SYNC_MODE", "mark_only").lower()
+    initial_sync_mode = os.getenv("INITIAL_SYNC_MODE", "notify_all").lower()
     if initial_sync_mode not in {"mark_only", "notify_all"}:
         raise ValueError("INITIAL_SYNC_MODE must be 'mark_only' or 'notify_all'")
     log_level = os.getenv("LOG_LEVEL", "INFO")
@@ -105,7 +105,7 @@ def load_tenants() -> list[Config]:
         order_state           - optional Kaspi filter
         order_status          - optional Kaspi filter
         page_size             - optional Kaspi page size
-        initial_sync_mode     - default: INITIAL_SYNC_MODE env or 'mark_only'
+        initial_sync_mode     - default: INITIAL_SYNC_MODE env or 'notify_all'
         log_level             - default: LOG_LEVEL env or 'INFO'
         processed_retention_days - default: PROCESSED_RETENTION_DAYS env or null
     """
@@ -129,7 +129,7 @@ def load_tenants() -> list[Config]:
     # Global defaults from environment
     global_http_timeout = int(os.getenv("HTTP_TIMEOUT", "10"))
     global_dry_run = os.getenv("DRY_RUN", "0").lower() in ("1", "true", "yes")
-    global_initial_sync_mode = os.getenv("INITIAL_SYNC_MODE", "mark_only").lower()
+    global_initial_sync_mode = os.getenv("INITIAL_SYNC_MODE", "notify_all").lower()
     if global_initial_sync_mode not in {"mark_only", "notify_all"}:
         raise ValueError("INITIAL_SYNC_MODE must be 'mark_only' or 'notify_all'")
     global_log_level = os.getenv("LOG_LEVEL", "INFO")
