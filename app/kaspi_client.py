@@ -97,8 +97,34 @@ class KaspiClient:
             if not order.id:
                 logger.warning("Skipping order without id")
                 continue
+            self._attach_order_entries(order)
             orders.append(order)
         return orders
+
+    def _attach_order_entries(self, order: Order) -> None:
+        entries_url = (
+            order.raw.get("relationships", {})
+            .get("entries", {})
+            .get("links", {})
+            .get("related")
+        )
+        if not entries_url:
+            return
+
+        headers = {
+            "X-Auth-Token": self.api_key,
+            "Accept": "application/vnd.api+json",
+            "User-Agent": "PostmanRuntime/7.52.0",
+        }
+        try:
+            response = requests.get(entries_url, headers=headers, timeout=(10, self.timeout))
+            response.raise_for_status()
+            payload = response.json()
+        except (requests.RequestException, ValueError) as exc:
+            logger.warning("Failed to fetch order entries for order %s: %s", order.id, exc)
+            return
+
+        order.raw["entries"] = payload.get("data") or []
 
 
 def _build_params(state: str | None, status: str | None, page_size: int | None) -> dict:
