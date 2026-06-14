@@ -1,5 +1,5 @@
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from app.config import Config
 from app.logger import setup_logger
@@ -104,6 +104,6 @@ def _format_datetime(value: object) -> str | None:
     if value is None:
         return None
     try:
-        return datetime.fromtimestamp(int(value) / 1000).strftime("%Y-%m-%d %H:%M")
+        return datetime.fromtimestamp(int(value) / 1000, timezone(timedelta(hours=5))).strftime("%Y-%m-%d %H:%M")
     except (TypeError, ValueError):
         return str(value)
