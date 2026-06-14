@@ -46,17 +46,18 @@ class TelegramClient:
             parts.append(f"Сумма: {order.total_price}")
         if order.customer_name:
             parts.append(f"Покупатель: {order.customer_name}")
-        if order.customer_phone:
-            parts.append(f"Телефон: {order.customer_phone}")
+        phone = _format_phone(order.customer_phone)
+        if phone:
+            parts.append(f"Телефон: {phone}")
         if attributes.get("deliveryMode"):
-            parts.append(f"Доставка: {attributes.get('deliveryMode')}")
+            parts.append(f"Способ получения: {_format_delivery_mode(attributes.get('deliveryMode'))}")
         address = _format_address(attributes.get("deliveryAddress"))
         if address:
             parts.append(f"Адрес: {address}")
         if order.status:
-            parts.append(f"Статус: {order.status}")
+            parts.append(f"Статус: {_format_status(order.status)}")
         if order.state:
-            parts.append(f"Тип: {order.state}")
+            parts.append(f"Тип заказа: {_format_state(order.state)}")
         created_at = _format_datetime(order.created_at)
         if created_at:
             parts.append(f"Создан: {created_at}")
@@ -81,6 +82,43 @@ def _format_items(entries: list[dict]) -> str | None:
         items.append(item)
 
     return "; ".join(items) if items else None
+
+
+def _format_phone(phone: str | None) -> str | None:
+    if not phone:
+        return None
+    digits = "".join(char for char in phone if char.isdigit())
+    return None if digits and set(digits) == {"0"} else phone
+
+
+def _format_delivery_mode(value: str) -> str:
+    labels = {
+        "DELIVERY_PICKUP": "самовывоз",
+        "DELIVERY_LOCAL": "доставка",
+    }
+    return labels.get(value, value)
+
+
+def _format_status(value: str) -> str:
+    labels = {
+        "ACCEPTED_BY_MERCHANT": "принят магазином",
+        "APPROVED_BY_BANK": "одобрен банком",
+        "COMPLETED": "завершён",
+        "CANCELLED": "отменён",
+        "RETURNED": "возврат",
+    }
+    return labels.get(value, value)
+
+
+def _format_state(value: str) -> str:
+    labels = {
+        "KASPI_DELIVERY": "Kaspi Доставка",
+        "PICKUP": "самовывоз",
+        "DELIVERY": "доставка",
+        "NEW": "новый",
+        "SIGN_REQUIRED": "ожидает подписи",
+    }
+    return labels.get(value, value)
 
 
 def _format_address(address: object) -> str | None:
