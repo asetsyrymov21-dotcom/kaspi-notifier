@@ -84,7 +84,7 @@ or follow these commands:
 # On VPS
 cd /opt && git clone https://github.com/<you>/kaspi-notifier.git
 cd kaspi-notifier
-cp .env.example .env && nano .env
+nano .env  # create locally; add required settings and secrets, never commit
 docker compose up -d postgres
 docker compose run --rm notifier
 ```
