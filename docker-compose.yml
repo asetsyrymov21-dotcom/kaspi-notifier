@@ -5,7 +5,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: kaspi
-      POSTGRES_PASSWORD: kaspi
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in local .env}
       POSTGRES_DB: kaspi
     volumes:
       - pgdata:/var/lib/postgresql/data
