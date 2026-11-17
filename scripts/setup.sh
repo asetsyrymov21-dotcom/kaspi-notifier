@@ -160,9 +160,10 @@ echo
 warn "Enter the application credentials for .env on the VPS."
 warn "These stay on the VPS only — never pushed to GitHub.\n"
 
-ask "DATABASE_URL [postgresql://kaspi:kaspi@postgres:5432/kaspi]:"
-read -r DB_URL
-DB_URL="${DB_URL:-postgresql://kaspi:kaspi@postgres:5432/kaspi}"
+ask "PostgreSQL password (empty = generate a new password for a NEW installation):"
+read -r -s DB_PASS; echo
+DB_PASS="${DB_PASS:-$(openssl rand -hex 24)}"
+DB_URL="postgresql://kaspi:${DB_PASS}@postgres:5432/kaspi"
 
 ask "KASPI_ORDERS_URL (e.g. https://kaspi.kz/shop/api/orders):"
 read -r KASPI_URL
@@ -181,15 +182,16 @@ info "Running VPS setup (clone, .env, docker, systemd)..."
 
 ssh $SSH_OPTS "${VPS_USER}@${VPS_HOST}" bash -s \
   "$VPS_DEPLOY_PATH" "$REPO_FULL" \
-  "$DB_URL" "$KASPI_URL" "$KASPI_KEY" "$TG_TOKEN" "$TG_CHAT" << 'REMOTE'
+  "$DB_URL" "$DB_PASS" "$KASPI_URL" "$KASPI_KEY" "$TG_TOKEN" "$TG_CHAT" << 'REMOTE'
 set -euo pipefail
 DEPLOY_PATH="$1"
 REPO_FULL="$2"
 DB_URL="$3"
-KASPI_URL="$4"
-KASPI_KEY="$5"
-TG_TOKEN="$6"
-TG_CHAT="$7"
+DB_PASS="$4"
+KASPI_URL="$5"
+KASPI_KEY="$6"
+TG_TOKEN="$7"
+TG_CHAT="$8"
 
 echo "--- clone or update repo ---"
 if [ -d "$DEPLOY_PATH/.git" ]; then
@@ -201,6 +203,7 @@ fi
 
 echo "--- create .env ---"
 cat > .env << ENV
+POSTGRES_PASSWORD=${DB_PASS}
 DATABASE_URL=${DB_URL}
 KASPI_ORDERS_URL=${KASPI_URL}
 KASPI_API_KEY=${KASPI_KEY}
